@@ -1,56 +1,89 @@
-import { useEffect, useState, useRef } from 'react';
-import * as cocoSsd from '@tensorflow-models/coco-ssd';
-import '@tensorflow/tfjs';
-import type { DetectedObject } from '../types';
-import { getPriority, estimateDistance } from '../utils/priority';
+import { useEffect, useState, useRef } from "react";
+import * as cocoSsd from "@tensorflow-models/coco-ssd";
+import "@tensorflow/tfjs";
+import type { DetectedObject } from "../types";
+import { getPriority, estimateDistance } from "../utils/priority";
 
 export const useObjectDetection = (
-  videoRef: React.RefObject<HTMLVideoElement>,
-  isActive: boolean
+  videoRef: React.RefObject<HTMLVideoElement | null>,
+  canvasRef: React.RefObject<HTMLCanvasElement | null>,
+  isActive: boolean,
+  isIPCamera: boolean
 ) => {
-  const [model, setModel] = useState<cocoSsd.ObjectDetection | null>(null);
-  const [detections, setDetections] = useState<DetectedObject[]>([]);
-  const animationRef = useRef<number>();
+  const [model, setModel] =
+    useState<cocoSsd.ObjectDetection | null>(null);
 
-  // Load model
+  const [detections, setDetections] =
+    useState<DetectedObject[]>([]);
+
+  const rafRef = useRef<number | null>(null);
+  const lastRunRef = useRef<number>(0);
+
+  // Load model ONCE
   useEffect(() => {
-    const loadModel = async () => {
-      const loadedModel = await cocoSsd.load();
-      setModel(loadedModel);
-    };
-    loadModel();
+    cocoSsd.load().then(setModel);
   }, []);
 
   // Detection loop
   useEffect(() => {
-    if (!model || !isActive || !videoRef.current) return;
+    if (!model || !isActive) return;
 
     const detect = async () => {
-      if (videoRef.current && videoRef.current.readyState === 4) {
-        const predictions = await model.detect(videoRef.current);
-        
-        const processedDetections: DetectedObject[] = predictions.map(pred => ({
+      const now = Date.now();
+      if (now - lastRunRef.current < 120) {
+        rafRef.current = requestAnimationFrame(detect);
+        return;
+      }
+      lastRunRef.current = now;
+
+      const input = isIPCamera
+        ? canvasRef.current
+        : videoRef.current;
+
+      if (!input) {
+        rafRef.current = requestAnimationFrame(detect);
+        return;
+      }
+
+      // SAFETY: ensure dimensions exist
+      const height =
+        input instanceof HTMLVideoElement
+          ? input.videoHeight
+          : input.height;
+
+      if (!height || height === 0) {
+        rafRef.current = requestAnimationFrame(detect);
+        return;
+      }
+
+      try {
+        const predictions = await model.detect(input);
+
+        const processed = predictions.map(pred => ({
           class: pred.class,
           score: pred.score,
           bbox: pred.bbox,
           priority: getPriority(pred.class),
-          distance: estimateDistance(pred.bbox, videoRef.current!.videoHeight)
+          distance: estimateDistance(pred.bbox, height),
         }));
 
-        setDetections(processedDetections);
+        setDetections(processed);
+      } catch (e) {
+        console.error("Detection error:", e);
       }
-      
-      animationRef.current = requestAnimationFrame(detect);
+
+      rafRef.current = requestAnimationFrame(detect);
     };
 
     detect();
 
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [model, isActive, videoRef]);
+  }, [model, isActive, isIPCamera]);
 
-  return { detections, isModelLoaded: !!model };
+  return {
+    detections,
+    isModelLoaded: !!model,
+  };
 };

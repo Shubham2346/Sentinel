@@ -1,54 +1,82 @@
-import React, { useEffect, useRef } from 'react';
-import type { DetectedObject } from '../../types/detection.types';
+import React, { useEffect, useRef } from "react";
+import type { DetectedObject } from "../../types/detection.types";
 
 interface ObjectOverlayProps {
   detections: DetectedObject[];
-  videoRef: React.RefObject<HTMLVideoElement>;
+  /**
+   * Can be:
+   * - videoRef (laptop camera)
+   * - canvasRef (phone IP camera)
+   */
+  sourceRef: React.RefObject<
+    HTMLVideoElement | HTMLCanvasElement | null
+  >;
 }
 
-export const ObjectOverlay: React.FC<ObjectOverlayProps> = ({ detections, videoRef }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+export const ObjectOverlay: React.FC<ObjectOverlayProps> = ({
+  detections,
+  sourceRef,
+}) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    if (!canvasRef.current || !videoRef.current) return;
+    if (!canvasRef.current) return;
+    if (!sourceRef?.current) return;
 
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const video = videoRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    const source = sourceRef.current;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const width =
+      source instanceof HTMLVideoElement
+        ? source.videoWidth
+        : source.width;
 
-    detections.forEach(detection => {
-      const [x, y, width, height] = detection.bbox;
-      
-      // Color based on priority
-      const colors = {
-        critical: '#ef4444',
-        high: '#f59e0b',
-        medium: '#3b82f6',
-        low: '#10b981'
+    const height =
+      source instanceof HTMLVideoElement
+        ? source.videoHeight
+        : source.height;
+
+    if (!width || !height) return;
+
+    canvas.width = width;
+    canvas.height = height;
+
+    ctx.clearRect(0, 0, width, height);
+
+    detections.forEach(det => {
+      const [x, y, w, h] = det.bbox;
+
+      const colors: Record<string, string> = {
+        critical: "#ef4444",
+        high: "#f59e0b",
+        medium: "#3b82f6",
+        low: "#10b981",
       };
-      
-      ctx.strokeStyle = colors[detection.priority];
+
+      const color = colors[det.priority] ?? "#ffffff";
+
+      // Bounding box
+      ctx.strokeStyle = color;
       ctx.lineWidth = 3;
-      ctx.strokeRect(x, y, width, height);
-      
-      // Label
-      ctx.fillStyle = colors[detection.priority];
-      ctx.fillRect(x, y - 25, width, 25);
-      ctx.fillStyle = 'white';
-      ctx.font = '16px Arial';
+      ctx.strokeRect(x, y, w, h);
+
+      // Label background
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y - 24, ctx.measureText(det.class).width + 60, 24);
+
+      // Label text
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "16px Arial";
       ctx.fillText(
-        `${detection.class} (${detection.distance}m)`,
-        x + 5,
+        `${det.class} (${det.distance}m)`,
+        x + 4,
         y - 7
       );
     });
-  }, [detections, videoRef]);
+  }, [detections, sourceRef]);
 
   return (
     <canvas
