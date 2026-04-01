@@ -7,7 +7,7 @@ interface RegionOverlayProps {
   videoHeight: number;
 }
 
-export const RegionOverlay: React.FC<RegionOverlayProps> = ({ zone, videoWidth, videoHeight }) => {
+export const RegionOverlay: React.FC<RegionOverlayProps> = ({ zone, videoWidth, _videoHeight }) => {
   const isDanger = zone.dangerLevel === 'danger';
   const borderColor = isDanger ? 'border-red-600' : 'border-yellow-500';
   const bgColor = isDanger ? 'bg-red-600' : 'bg-yellow-500';

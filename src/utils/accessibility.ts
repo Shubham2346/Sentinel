@@ -17,7 +17,7 @@ export const ensureMinimumTouchTarget = (size: number) => {
   return Math.max(size, 44);
 };
 
-export const getContrastRatio = (foreground: string, background: string): number => {
+export const getContrastRatio = (_foreground: string, _background: string): number => {
   // Simplified contrast ratio calculation
   // In production, use a proper color contrast library
   return 4.5; // WCAG AA standard
