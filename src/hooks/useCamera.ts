@@ -1,8 +1,8 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 
 export const useCamera = () => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null!);
+  const canvasRef = useRef<HTMLCanvasElement>(null!);
   const [isActive, setIsActive] = useState(false);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const streamRef = useRef<MediaStream | null>(null);

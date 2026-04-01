@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { CameraView } from './components/Camera/CameraView';
-import { CameraControls } from './components/Camera/CameraControls';
+import { useState, useEffect } from 'react';
+// import { CameraView } from './components/Camera/CameraView';
+// import { CameraControls } from './components/Camera/CameraControls';
 import { ObjectOverlay } from './components/Detection/ObjectOverlay';
 import { VoiceInput } from './components/Voice/VoiceInput';
 import { CollisionAlert } from './components/Collision/CollisionAlert';
 import { RegionOverlay } from './components/Collision/RegionOverlay';
 import { useCamera } from './hooks/useCamera';
 import { useObjectDetection } from './hooks/useObjectDetection';
-import { useCollisionDetection } from './hooks/useCollisionDetection.ts';
+import { useCollisionDetection } from './hooks/useCollisionDetection';
 import { alertService } from './services/alertService';
 import './styles/globals.css';
 
