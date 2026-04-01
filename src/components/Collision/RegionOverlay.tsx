@@ -4,10 +4,10 @@ import type { CollisionZone } from '../../types';
 interface RegionOverlayProps {
   zone: CollisionZone;
   videoWidth: number;
-  videoHeight: number;
+  videoHeight?: number;
 }
 
-export const RegionOverlay: React.FC<RegionOverlayProps> = ({ zone, videoWidth, _videoHeight }) => {
+export const RegionOverlay: React.FC<RegionOverlayProps> = ({ zone, videoWidth }) => {
   const isDanger = zone.dangerLevel === 'danger';
   const borderColor = isDanger ? 'border-red-600' : 'border-yellow-500';
   const bgColor = isDanger ? 'bg-red-600' : 'bg-yellow-500';
