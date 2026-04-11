@@ -45,13 +45,27 @@ export const useObjectDetection = (
         return;
       }
 
+      if (input instanceof HTMLVideoElement) {
+        if (input.readyState < 2) {
+          rafRef.current = requestAnimationFrame(detect);
+          return;
+        }
+        // TFJS often requires explicit HTML width/height properties matching the video dimensions
+        if (input.videoWidth > 0 && input.width !== input.videoWidth) {
+          input.width = input.videoWidth;
+        }
+        if (input.videoHeight > 0 && input.height !== input.videoHeight) {
+          input.height = input.videoHeight;
+        }
+      }
+
       // SAFETY: ensure dimensions exist
-      const height =
+      const inputHeight =
         input instanceof HTMLVideoElement
           ? input.videoHeight
           : input.height;
 
-      if (!height || height === 0) {
+      if (!inputHeight || inputHeight === 0) {
         rafRef.current = requestAnimationFrame(detect);
         return;
       }
@@ -64,7 +78,7 @@ export const useObjectDetection = (
           score: pred.score,
           bbox: pred.bbox,
           priority: getPriority(pred.class),
-          distance: estimateDistance(pred.bbox, height),
+          distance: estimateDistance(pred.bbox, inputHeight),
         }));
 
         setDetections(processed);
