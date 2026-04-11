@@ -72,7 +72,7 @@ export const useCamera = () => {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      if (canvas.width === 0 && ipImageRef.current.width > 0) {
+      if (ipImageRef.current.width > 0 && canvas.width !== ipImageRef.current.width) {
         canvas.width = ipImageRef.current.width;
         canvas.height = ipImageRef.current.height;
       }
@@ -86,17 +86,27 @@ export const useCamera = () => {
 
     const loadFrame = () => {
       if (ipImageRef.current) {
-        ipImageRef.current.src = `${url}/shot.jpg?t=${Date.now()}`;
+        const targetUrl = `${url}/shot.jpg?t=${Date.now()}`;
+        ipImageRef.current.src = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
       }
     };
 
-    ipImageRef.current.onload = updateFrame;
+    ipImageRef.current.onload = () => {
+      updateFrame();
+      if (ipImageRef.current) {
+        ipIntervalRef.current = window.setTimeout(loadFrame, 100);
+      }
+    };
+    
     ipImageRef.current.onerror = () => {
-      console.error('Failed to load IP camera frame');
+      console.error('Failed to load IP camera frame, retrying...');
+      if (ipImageRef.current) {
+        // Wait longer before retrying to avoid spamming the network on full failure
+        ipIntervalRef.current = window.setTimeout(loadFrame, 2000); 
+      }
     };
 
     loadFrame();
-    ipIntervalRef.current = window.setInterval(loadFrame, 100);
   }, []);
 
   const stopCamera = useCallback(() => {
@@ -106,7 +116,7 @@ export const useCamera = () => {
     }
 
     if (ipIntervalRef.current) {
-      clearInterval(ipIntervalRef.current);
+      clearTimeout(ipIntervalRef.current);
       ipIntervalRef.current = null;
     }
 
