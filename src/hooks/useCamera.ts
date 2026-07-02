@@ -25,7 +25,13 @@ export const useCamera = () => {
         audio: false
       });
 
-      if (!videoRef.current) return;
+      streamRef.current = stream;
+
+      if (!videoRef.current) {
+        stream.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+        return;
+      }
 
       videoRef.current.srcObject = stream;
 
@@ -33,7 +39,6 @@ export const useCamera = () => {
       videoRef.current.onloadedmetadata = async () => {
         try {
           await videoRef.current!.play();
-          streamRef.current = stream;
           setIsActive(true); // ✅ ONLY after play()
           setIsIPCamera(false);
         } catch (err) {

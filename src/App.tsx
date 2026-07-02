@@ -44,6 +44,14 @@ function App() {
   const [showIPInput, setShowIPInput] = useState(false);
   const [ipInput, setIPInput] = useState('');
 
+  // Auto-start camera on component mount
+  useEffect(() => {
+    startCamera();
+    return () => {
+      stopCamera();
+    };
+  }, [startCamera, stopCamera]);
+
   // Process detections for alerts (existing functionality)
   useEffect(() => {
     if (detections.length > 0 && isActive) {
@@ -205,62 +213,62 @@ function App() {
 
       {/* Main Camera Viewport */}
       <div className="relative w-full flex-1 z-10 flex items-center justify-center overflow-hidden">
-        {isActive ? (
-          <div className="relative w-full h-full p-4 pb-32">
-            <div className="w-full h-full relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl shadow-black/50 bg-black/50 group">
-              {isIPCamera ? (
-                <canvas
-                  ref={canvasRef}
-                  className="w-full h-full object-contain blur-[1px] group-hover:blur-0 transition-all duration-700"
-                />
-              ) : (
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover transform -scale-x-100" // Mirrors local camera logic naturally for UI, though may affect bbox without explicit handling.
-                />
-              )}
+        <div className={`w-full h-full p-4 pb-32 ${isActive ? 'relative block' : 'absolute pointer-events-none opacity-0 invisible'}`}>
+          <div className="w-full h-full relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl shadow-black/50 bg-black/50 group">
+            {isIPCamera ? (
+              <canvas
+                ref={canvasRef}
+                className="w-full h-full object-contain blur-[1px] group-hover:blur-0 transition-all duration-700"
+              />
+            ) : (
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover transform -scale-x-100" // Mirrors local camera logic naturally for UI, though may affect bbox without explicit handling.
+              />
+            )}
 
-              {/* Advanced HUD Overlay Grid */}
-              <div className="absolute inset-0 pointer-events-none opacity-30 mix-blend-overlay">
-                <div className="absolute left-1/3 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-blue-400 to-transparent" />
-                <div className="absolute left-2/3 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-blue-400 to-transparent" />
-                <div className="absolute top-1/3 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent" />
-                <div className="absolute top-2/3 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent" />
-                
-                {/* HUD Crosshairs */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                   <div className="w-8 h-8 border border-white/20 rounded-full flex items-center justify-center">
-                     <div className="w-1 h-1 bg-white/40 rounded-full" />
-                   </div>
-                </div>
+            {/* Advanced HUD Overlay Grid */}
+            <div className="absolute inset-0 pointer-events-none opacity-30 mix-blend-overlay">
+              <div className="absolute left-1/3 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-blue-400 to-transparent" />
+              <div className="absolute left-2/3 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-blue-400 to-transparent" />
+              <div className="absolute top-1/3 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent" />
+              <div className="absolute top-2/3 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent" />
+              
+              {/* HUD Crosshairs */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                 <div className="w-8 h-8 border border-white/20 rounded-full flex items-center justify-center">
+                   <div className="w-1 h-1 bg-white/40 rounded-full" />
+                 </div>
               </div>
-
-              {/* Collision Alert Overlays */}
-              {collisionAlert.isActive && collisionAlert.zone && (
-                <>
-                  <RegionOverlay 
-                    zone={collisionAlert.zone} 
-                    videoWidth={videoWidth}
-                    videoHeight={isIPCamera ? canvasRef.current?.height || 0 : videoRef.current?.videoHeight || 0}
-                  />
-                  <div className="absolute inset-0 ring-4 ring-red-500/50 rounded-3xl pointer-events-none animate-pulse" />
-                  <CollisionAlert zone={collisionAlert.zone} />
-                </>
-              )}
-
-              {/* Object Detections */}
-              {isModelLoaded && (
-                <ObjectOverlay 
-                  detections={detections} 
-                  sourceRef={isIPCamera ? canvasRef : videoRef}
-                />
-              )}
             </div>
+
+            {/* Collision Alert Overlays */}
+            {collisionAlert.isActive && collisionAlert.zone && (
+              <>
+                <RegionOverlay 
+                  zone={collisionAlert.zone} 
+                  videoWidth={videoWidth}
+                  videoHeight={isIPCamera ? canvasRef.current?.height || 0 : videoRef.current?.videoHeight || 0}
+                />
+                <div className="absolute inset-0 ring-4 ring-red-500/50 rounded-3xl pointer-events-none animate-pulse" />
+                <CollisionAlert zone={collisionAlert.zone} />
+              </>
+            )}
+
+            {/* Object Detections */}
+            {isModelLoaded && (
+              <ObjectOverlay 
+                detections={detections} 
+                sourceRef={isIPCamera ? canvasRef : videoRef}
+              />
+            )}
           </div>
-        ) : (
+        </div>
+
+        {!isActive && (
           <div className="flex flex-col items-center justify-center h-full space-y-6 opacity-60">
             <div className="w-24 h-24 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-4xl animate-pulse">
               👁️
